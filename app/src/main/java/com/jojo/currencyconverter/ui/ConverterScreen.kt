@@ -3,7 +3,6 @@ package com.jojo.currencyconverter.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,8 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Check
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -50,9 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
@@ -79,6 +77,11 @@ import com.jojo.currencyconverter.ui.theme.LocalCurrencyColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private const val CompactWindowHeightThresholdDp = 780f
+
+internal fun shouldUseCompactWindowLayout(heightDp: Float): Boolean =
+    heightDp < CompactWindowHeightThresholdDp
 
 @Composable
 fun ConverterRoute(
@@ -133,33 +136,69 @@ private fun ConverterScreen(
             .fillMaxSize()
             .background(colors.appBackground),
     ) {
-        val conversionHeight = (maxHeight * 0.47f).coerceIn(390.dp, 438.dp)
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-        ) {
-            ConversionPanel(
-                state = state,
+        val compactWindow = shouldUseCompactWindowLayout(maxHeight.value)
+
+        if (compactWindow) {
+            val scrollState = rememberScrollState()
+            val conversionHeight = (maxHeight * 0.62f).coerceIn(270.dp, 340.dp)
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(conversionHeight),
-                onOpenCurrencyPicker = onOpenCurrencyPicker,
-                onSwapCurrencies = onSwapCurrencies,
-            )
-            CalculatorPad(
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .verticalScroll(scrollState),
+            ) {
+                ConversionPanel(
+                    state = state,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(conversionHeight),
+                    compact = true,
+                    onOpenCurrencyPicker = onOpenCurrencyPicker,
+                    onSwapCurrencies = onSwapCurrencies,
+                )
+                CalculatorPad(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(390.dp)
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    onDigit = onDigit,
+                    onDecimal = onDecimal,
+                    onOperator = onOperator,
+                    onBackspace = onBackspace,
+                    onClear = onClear,
+                    onPercent = onPercent,
+                    onEquals = onEquals,
+                )
+            }
+        } else {
+            val conversionHeight = (maxHeight * 0.47f).coerceIn(390.dp, 438.dp)
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 14.dp, vertical = 14.dp),
-                onDigit = onDigit,
-                onDecimal = onDecimal,
-                onOperator = onOperator,
-                onBackspace = onBackspace,
-                onClear = onClear,
-                onPercent = onPercent,
-                onEquals = onEquals,
-            )
+                    .fillMaxSize()
+                    .navigationBarsPadding(),
+            ) {
+                ConversionPanel(
+                    state = state,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(conversionHeight),
+                    onOpenCurrencyPicker = onOpenCurrencyPicker,
+                    onSwapCurrencies = onSwapCurrencies,
+                )
+                CalculatorPad(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                    onDigit = onDigit,
+                    onDecimal = onDecimal,
+                    onOperator = onOperator,
+                    onBackspace = onBackspace,
+                    onClear = onClear,
+                    onPercent = onPercent,
+                    onEquals = onEquals,
+                )
+            }
         }
     }
 }
@@ -170,6 +209,7 @@ private fun ConversionPanel(
     modifier: Modifier,
     onOpenCurrencyPicker: (CurrencySlot) -> Unit,
     onSwapCurrencies: () -> Unit,
+    compact: Boolean = false,
 ) {
     val colors = LocalCurrencyColors.current
     Surface(
@@ -182,7 +222,12 @@ private fun ConversionPanel(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(start = 28.dp, end = 28.dp, top = 12.dp, bottom = 16.dp),
+                .padding(
+                    start = if (compact) 18.dp else 28.dp,
+                    end = if (compact) 18.dp else 28.dp,
+                    top = if (compact) 4.dp else 12.dp,
+                    bottom = if (compact) 8.dp else 16.dp,
+                ),
         ) {
             ConversionBand(
                 modifier = Modifier
@@ -191,11 +236,12 @@ private fun ConversionPanel(
                 currency = state.fromCurrency,
                 expression = ExpressionEvaluator.formatExpression(state.expression),
                 amount = state.sourceValue,
-                amountMaxSize = 54,
-                amountMinSize = 18,
+                amountMaxSize = if (compact) 40 else 54,
+                amountMinSize = if (compact) 15 else 18,
+                compact = compact,
                 onCurrencyClick = { onOpenCurrencyPicker(CurrencySlot.From) },
             )
-            SwapDivider(onSwapCurrencies)
+            SwapDivider(onSwapCurrencies, compact)
             ConversionBand(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -203,8 +249,9 @@ private fun ConversionPanel(
                 currency = state.toCurrency,
                 expression = "约合",
                 amount = state.convertedValue,
-                amountMaxSize = 48,
-                amountMinSize = 17,
+                amountMaxSize = if (compact) 38 else 48,
+                amountMinSize = if (compact) 14 else 17,
+                compact = compact,
                 converted = true,
                 onCurrencyClick = { onOpenCurrencyPicker(CurrencySlot.To) },
             )
@@ -212,7 +259,7 @@ private fun ConversionPanel(
                 modifier = Modifier.fillMaxWidth(),
                 text = buildRateText(state),
                 color = colors.secondaryText,
-                fontSize = 13.sp,
+                fontSize = if (compact) 11.sp else 13.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.End,
                 maxLines = 1,
@@ -232,6 +279,7 @@ private fun ConversionBand(
     onCurrencyClick: () -> Unit,
     modifier: Modifier = Modifier,
     converted: Boolean = false,
+    compact: Boolean = false,
 ) {
     val colors = LocalCurrencyColors.current
     Row(
@@ -240,9 +288,10 @@ private fun ConversionBand(
     ) {
         CurrencySelector(
             currency = currency,
+            compact = compact,
             onClick = onCurrencyClick,
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(if (compact) 6.dp else 10.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -254,13 +303,26 @@ private fun ConversionBand(
                 modifier = Modifier.fillMaxWidth(),
                 text = expression,
                 color = colors.primaryText,
-                fontSize = if (converted) 18.sp else 16.sp,
+                fontSize = when {
+                    compact && converted -> 14.sp
+                    compact -> 13.sp
+                    converted -> 18.sp
+                    else -> 16.sp
+                },
                 fontWeight = if (converted) FontWeight.SemiBold else FontWeight.Medium,
                 textAlign = TextAlign.End,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(if (converted) 14.dp else 16.dp))
+            Spacer(
+                Modifier.height(
+                    when {
+                        compact -> 5.dp
+                        converted -> 14.dp
+                        else -> 16.dp
+                    },
+                ),
+            )
             AutoSizeAmount(
                 currency = currency,
                 amount = amount,
@@ -275,46 +337,47 @@ private fun ConversionBand(
 private fun CurrencySelector(
     currency: CurrencyInfo,
     onClick: () -> Unit,
+    compact: Boolean = false,
 ) {
     val colors = LocalCurrencyColors.current
     Column(
         modifier = Modifier
-            .width(84.dp)
+            .width(if (compact) 66.dp else 84.dp)
             .clip(RoundedCornerShape(18.dp))
             .clickable(
                 role = Role.Button,
                 onClickLabel = "选择${currency.name}",
                 onClick = onClick,
             )
-            .padding(vertical = 5.dp),
+            .padding(vertical = if (compact) 1.dp else 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         SvgFlag(
             flagCode = currency.flagCode,
-            modifier = Modifier.size(42.dp),
+            modifier = Modifier.size(if (compact) 32.dp else 42.dp),
         )
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(if (compact) 3.dp else 7.dp))
         Text(
             text = currency.name,
             color = colors.primaryText,
-            fontSize = 18.sp,
+            fontSize = if (compact) 15.sp else 18.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
         )
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(if (compact) 0.dp else 2.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = currency.code,
                 color = colors.secondaryText,
-                fontSize = 14.sp,
+                fontSize = if (compact) 12.sp else 14.sp,
                 fontWeight = FontWeight.Medium,
             )
             Icon(
                 imageVector = Icons.Rounded.KeyboardArrowDown,
                 contentDescription = null,
                 tint = colors.secondaryText,
-                modifier = Modifier.size(19.dp),
+                modifier = Modifier.size(if (compact) 16.dp else 19.dp),
             )
         }
     }
@@ -398,18 +461,21 @@ private fun amountAnnotatedText(
 }
 
 @Composable
-private fun SwapDivider(onClick: () -> Unit) {
+private fun SwapDivider(
+    onClick: () -> Unit,
+    compact: Boolean = false,
+) {
     val colors = LocalCurrencyColors.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(if (compact) 34.dp else 44.dp),
         contentAlignment = Alignment.Center,
     ) {
         HorizontalDivider(color = colors.divider)
         Surface(
             onClick = onClick,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(if (compact) 38.dp else 48.dp),
             shape = CircleShape,
             color = colors.swapSurface,
             contentColor = colors.primaryText,
@@ -420,7 +486,7 @@ private fun SwapDivider(onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Rounded.Height,
                     contentDescription = "交换原始币种和目标币种",
-                    modifier = Modifier.size(29.dp),
+                    modifier = Modifier.size(if (compact) 23.dp else 29.dp),
                 )
             }
         }
