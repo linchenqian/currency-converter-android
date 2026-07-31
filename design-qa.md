@@ -14,13 +14,14 @@
 - The calculator keeps a fixed usable height instead of accepting destructive parent compression
 - Normal-height windows retain the existing approved layout
 - Fixed portrait orientation was removed so Android multi-window can resize the activity normally
+- Launcher icon artwork now occupies approximately 55% of the canvas width, balancing the original oversized mark with comfortable launcher padding while preserving the full-size textured background
 
 ## Automated verification
 
 - `WindowLayoutPolicyTest` covers split-screen and regular-height thresholds
 - All 9 JVM unit tests pass
 - Android Lint passes
-- Debug APK builds successfully as version `1.0.1` (`versionCode 2`)
+- Debug APK builds successfully as version `1.0.2` (`versionCode 3`)
 
 ## Runtime visual comparison
 
