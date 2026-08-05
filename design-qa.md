@@ -2,29 +2,31 @@
 
 ## Reference
 
-- User-provided Android split-screen screenshot dated 2026-07-31
-- Target app window is approximately half of the device height
-- Visible defect: the fixed-height conversion panel leaves too little height for the calculator, compressing five keypad rows into thin lines
+- User-provided side-by-side Android split-screen screenshot dated 2026-08-05
+- Saved audit image: `/private/tmp/currency-converter-split-screen-audit/01-half-screen-comparison.png`
+- The reference app fits two currency rows and all five calculator rows into a half-height window by reducing information density and unused space
+- The previous build devoted most of the available height to the conversion panel, leaving only the first calculator row visible
 
 ## Implemented correction
 
-- Windows below `780dp` height now use a compact, vertically scrollable layout
-- The compact conversion panel scales between `270dp` and `340dp`
-- Currency selectors, amount text, spacing, and the swap control scale down together
-- The calculator keeps a fixed usable height instead of accepting destructive parent compression
-- Normal-height windows retain the existing approved layout
-- Fixed portrait orientation was removed so Android multi-window can resize the activity normally
-- Launcher icon artwork now occupies approximately 55% of the canvas width, balancing the original oversized mark with comfortable launcher padding while preserving the full-size textured background
+- Added three responsive modes: `Regular` at `780dp` and above, `Compact` from `520dp`, and `HalfScreen` below `520dp`
+- Removed the split-screen scrolling workaround; conversion and calculator panels now share the current window height
+- Half-screen mode limits the conversion panel to approximately 38% of the available height
+- Half-screen mode hides Chinese currency names, expression labels, the “约合” label, and the exchange-rate timestamp while retaining flags, currency codes, amounts, and the swap control
+- Currency flags, amount typography, swap control, panel padding, and blank space compress together in half-screen mode
+- The calculator uses all remaining height, with tighter outer padding, row/column gaps, key radii, operator width, icon sizes, and type sizes
+- Full-screen mode retains the approved layout and styling; medium-height windows use an intermediate compact density
+- Fixed portrait orientation remains disabled so Android multi-window can resize the activity normally
 
 ## Automated verification
 
-- `WindowLayoutPolicyTest` covers split-screen and regular-height thresholds
-- All 9 JVM unit tests pass
-- Android Lint passes
-- Debug APK builds successfully as version `1.0.2` (`versionCode 3`)
+- `WindowLayoutPolicyTest` covers all three modes and both responsive thresholds
+- All 10 JVM unit tests pass, including three responsive-window policy tests
+- Android Lint passes with no blocking findings
+- Debug APK assembly succeeds as version `1.0.3` (`versionCode 4`)
 
 ## Runtime visual comparison
 
-No Android device or emulator is connected to this environment. The corrected app therefore cannot be captured at the same split-screen viewport for visual comparison yet. Install the generated APK on the reporting device and repeat the same split-screen configuration to complete this check.
+No Android device or emulator is connected to this environment. The implementation cannot yet be captured at the same split-screen viewport and compared against the reference image. Install the generated APK on the reporting device and repeat the same split-screen configuration to complete the final visual check.
 
 final result: blocked
