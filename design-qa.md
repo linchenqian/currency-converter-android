@@ -43,6 +43,27 @@ final result: blocked
 
 launcher icon result: passed
 
+## Launcher color and depth refinement — 2026-08-05
+
+- Kept the launcher mark at the accepted compact scale and preserved its geometric center
+- Separated the globe interior from the outer midnight-navy background with a brighter sapphire-to-teal gradient
+- Added restrained upper-left highlights and lower-right shading for clearer dimensional depth
+- Changed the globe and arrow linework to a cool pearl-to-ice-blue finish and the dollar mark to an amber-to-coral gradient
+- Preserved the two arrows as the only outer contour, without adding a second circular border
+- Regenerated the adaptive foreground, README preview, and all legacy launcher density resources from the same master
+- Pixel bounds remain horizontally centered; the 512px master is only 0.5px above the exact vertical center
+
+launcher color refinement result: passed
+
+## Outer-arrow weight refinement — 2026-08-05
+
+- Increased only the two outer circular-arrow strokes by approximately 25%
+- Kept the internal latitude/longitude lines, dollar mark, gradients, arrow gaps, rounded tails, and overall footprint unchanged
+- Regenerated the adaptive foreground, README preview, and every legacy launcher density resource
+- The final 512px visible-symbol bounds are offset only 0.5px left and 0px vertically; the 192px launcher bounds are centered exactly
+
+outer-arrow weight refinement result: passed
+
 ## Equals interaction follow-up — 2026-08-05
 
 - A successful equals action immediately replaces the entered expression with its calculated result
