@@ -64,6 +64,15 @@ launcher color refinement result: passed
 
 outer-arrow weight refinement result: passed
 
+## Outer-background restoration — 2026-08-05
+
+- Restored the visibly brighter textured blue-navy background from the v1.0.5 artwork while preserving the thicker-arrow central mark
+- Extracted only the current globe, arrows, internal grid, and dollar mark so no wide dark transition band remains around the icon
+- The final outer-background mean RGB is `(0.32, 30.23, 61.65)`, exactly matching the v1.0.5 reference
+- Regenerated the adaptive foreground, README preview, and every legacy launcher density resource
+
+outer-background restoration result: passed
+
 ## Equals interaction follow-up — 2026-08-05
 
 - A successful equals action immediately replaces the entered expression with its calculated result
