@@ -41,6 +41,14 @@ data class ConverterUiState(
         get() = sourceValue?.let { source -> conversionRate?.let(source::times) }
 }
 
+internal fun commitCalculation(current: ConverterUiState): ConverterUiState {
+    val result = current.sourceValue?.takeIf { it.isFinite() } ?: return current
+    return current.copy(
+        expression = ExpressionEvaluator.resultNumber(result),
+        committed = true,
+    )
+}
+
 class ConverterViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = RatesRepository(application)
     private val initialRates = repository.initialSnapshot()
@@ -155,9 +163,7 @@ class ConverterViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun commitExpression() {
-        _uiState.update { current ->
-            if (current.sourceValue == null) current else current.copy(committed = true)
-        }
+        _uiState.update(::commitCalculation)
     }
 
     fun swapCurrencies() {

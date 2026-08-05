@@ -24,6 +24,7 @@ object ExpressionEvaluator {
         "0.####E0",
         DecimalFormatSymbols(Locale.US),
     )
+    private val resultPrecision = MathContext(12, RoundingMode.HALF_UP)
 
     fun evaluate(rawExpression: String): Double? {
         val expression = rawExpression.replace(trailingOperators, "")
@@ -118,6 +119,11 @@ object ExpressionEvaluator {
     }
 
     fun plainNumber(value: Double): String = BigDecimal.valueOf(value)
+        .stripTrailingZeros()
+        .toPlainString()
+
+    fun resultNumber(value: Double): String = BigDecimal.valueOf(value)
+        .round(resultPrecision)
         .stripTrailingZeros()
         .toPlainString()
 }
