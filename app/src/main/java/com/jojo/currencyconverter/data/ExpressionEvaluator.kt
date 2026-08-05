@@ -126,4 +126,9 @@ object ExpressionEvaluator {
         .round(resultPrecision)
         .stripTrailingZeros()
         .toPlainString()
+
+    fun percentNumber(value: String): String? = value.toBigDecimalOrNull()
+        ?.movePointLeft(2)
+        ?.stripTrailingZeros()
+        ?.toPlainString()
 }

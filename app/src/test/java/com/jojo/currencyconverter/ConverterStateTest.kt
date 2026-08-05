@@ -33,4 +33,29 @@ class ConverterStateTest {
         assertSame(initial, committed)
         assertFalse(committed.committed)
     }
+
+    @Test
+    fun percentUsesExactDecimalForTrailingOperand() {
+        val initial = ConverterUiState(
+            expression = "1475×668.55",
+            rates = emptyMap(),
+        )
+
+        val percent = applyPercentCalculation(initial)
+
+        assertEquals("1475×6.6855", percent.expression)
+        assertEquals(9861.1125, percent.sourceValue!!, 0.0000001)
+    }
+
+    @Test
+    fun percentPreservesSmallDecimalValues() {
+        val initial = ConverterUiState(
+            expression = "0.1",
+            rates = emptyMap(),
+        )
+
+        val percent = applyPercentCalculation(initial)
+
+        assertEquals("0.001", percent.expression)
+    }
 }

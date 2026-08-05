@@ -38,7 +38,7 @@ final result: blocked
 - Preserved the `512 × 512px` canvas, textured navy background, colors, line work, and center alignment
 - Regenerated legacy square and round launcher resources for mdpi through xxxhdpi from the updated master
 - Updated the README icon preview and adaptive-icon foreground from the same master
-- Android Lint and all 12 JVM unit tests pass
+- Android Lint and all 14 JVM unit tests pass
 - Debug APK assembly succeeds as version `1.0.4` (`versionCode 5`)
 
 launcher icon result: passed
@@ -52,3 +52,13 @@ launcher icon result: passed
 - Added unit coverage for successful and invalid equals actions
 
 equals interaction result: passed
+
+## Percent precision follow-up — 2026-08-05
+
+- Replaced binary floating-point percentage conversion with exact decimal arithmetic
+- Verified the reported `1475 × 668.55` case becomes `1475 × 6.6855` after pressing percent
+- Verified small percentages such as `0.1%` remain `0.001` instead of being rounded away
+- Added regression coverage for both percentage scenarios
+- Android Lint, all 14 JVM unit tests, and the version `1.0.5` debug APK build pass
+
+percent precision result: passed

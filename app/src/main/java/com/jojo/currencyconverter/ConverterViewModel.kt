@@ -49,6 +49,24 @@ internal fun commitCalculation(current: ConverterUiState): ConverterUiState {
     )
 }
 
+private val trailingNumber = Regex("""(\d*\.?\d+)$""")
+
+internal fun applyPercentCalculation(current: ConverterUiState): ConverterUiState {
+    val base = if (current.committed && current.sourceValue != null) {
+        ExpressionEvaluator.resultNumber(current.sourceValue!!)
+    } else {
+        current.expression
+    }
+    val match = trailingNumber.find(base)
+        ?: return current.copy(expression = base, committed = false)
+    val replacement = ExpressionEvaluator.percentNumber(match.value)
+        ?: return current.copy(expression = base, committed = false)
+    return current.copy(
+        expression = base.replaceRange(match.range, replacement),
+        committed = false,
+    )
+}
+
 class ConverterViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = RatesRepository(application)
     private val initialRates = repository.initialSnapshot()
@@ -144,22 +162,7 @@ class ConverterViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun applyPercent() {
-        _uiState.update { current ->
-            val base = if (current.committed && current.sourceValue != null) {
-                ExpressionEvaluator.plainNumber(current.sourceValue!!)
-            } else {
-                current.expression
-            }
-            val match = Regex("""(\d*\.?\d+)$""").find(base)
-                ?: return@update current.copy(expression = base, committed = false)
-            val value = match.value.toDoubleOrNull()
-                ?: return@update current.copy(expression = base, committed = false)
-            val replacement = ExpressionEvaluator.plainNumber(value / 100)
-            current.copy(
-                expression = base.replaceRange(match.range, replacement),
-                committed = false,
-            )
-        }
+        _uiState.update(::applyPercentCalculation)
     }
 
     fun commitExpression() {
