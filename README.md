@@ -1,10 +1,10 @@
-# 汇率计算器
+# Currency
 
 <p align="center">
-  <img src="docs/app-icon.png" width="128" alt="汇率计算器 App 图标">
+  <img src="docs/app-icon.png" width="128" alt="Currency App icon">
 </p>
 
-一个以计算器为核心交互的原生 Android 货币换算应用。输入金额时可以直接进行加、减、乘、除和百分比运算，计算结果会同步换算为目标币种。
+Currency 是一个以计算器为核心交互的原生 Android 货币换算应用。输入金额时可以直接进行加、减、乘、除和百分比运算，计算结果会同步换算为目标币种。
 
 ## 功能
 

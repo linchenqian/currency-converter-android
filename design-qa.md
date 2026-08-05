@@ -62,3 +62,13 @@ equals interaction result: passed
 - Android Lint, all 14 JVM unit tests, and the version `1.0.5` debug APK build pass
 
 percent precision result: passed
+
+## App name follow-up — 2026-08-05
+
+- Changed the Android launcher label from `汇率计算器` to `Currency`
+- Updated the Gradle root project name and README title/description to match
+- Kept the application ID `com.jojo.currencyconverter` unchanged for update compatibility
+- Verified the built version `1.0.5` APK reports `application-label:'Currency'`
+- Android Lint, all 14 JVM unit tests, and APK assembly pass
+
+app name result: passed
