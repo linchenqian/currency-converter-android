@@ -30,3 +30,25 @@
 No Android device or emulator is connected to this environment. The implementation cannot yet be captured at the same split-screen viewport and compared against the reference image. Install the generated APK on the reporting device and repeat the same split-screen configuration to complete the final visual check.
 
 final result: blocked
+
+## Launcher icon follow-up — 2026-08-05
+
+- Reduced only the central globe, arrows, and dollar mark to 80% of the v1.0.3 artwork size
+- Measured mark bounds changed from approximately `278 × 298px` to `222 × 239px`
+- Preserved the `512 × 512px` canvas, textured navy background, colors, line work, and center alignment
+- Regenerated legacy square and round launcher resources for mdpi through xxxhdpi from the updated master
+- Updated the README icon preview and adaptive-icon foreground from the same master
+- Android Lint and all 12 JVM unit tests pass
+- Debug APK assembly succeeds as version `1.0.4` (`versionCode 5`)
+
+launcher icon result: passed
+
+## Equals interaction follow-up — 2026-08-05
+
+- A successful equals action immediately replaces the entered expression with its calculated result
+- Results use up to 12 significant digits so repeating decimals remain useful without overflowing the expression line
+- Entering a digit after equals still starts a new calculation; entering an operator continues from the result
+- Invalid calculations such as division by zero remain unchanged so the user can edit the expression
+- Added unit coverage for successful and invalid equals actions
+
+equals interaction result: passed
