@@ -30,3 +30,15 @@
 No Android device or emulator is connected to this environment. The implementation cannot yet be captured at the same split-screen viewport and compared against the reference image. Install the generated APK on the reporting device and repeat the same split-screen configuration to complete the final visual check.
 
 final result: blocked
+
+## Launcher icon follow-up — 2026-08-05
+
+- Reduced only the central globe, arrows, and dollar mark to 80% of the v1.0.3 artwork size
+- Measured mark bounds changed from approximately `278 × 298px` to `222 × 239px`
+- Preserved the `512 × 512px` canvas, textured navy background, colors, line work, and center alignment
+- Regenerated legacy square and round launcher resources for mdpi through xxxhdpi from the updated master
+- Updated the README icon preview and adaptive-icon foreground from the same master
+- Android Lint and all 10 JVM unit tests pass
+- Debug APK assembly succeeds as version `1.0.4` (`versionCode 5`)
+
+launcher icon result: passed
