@@ -1,19 +1,24 @@
 package com.jojo.currencyconverter.ui
 
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class WindowLayoutPolicyTest {
     @Test
-    fun shortSplitScreenUsesCompactScrollableLayout() {
-        assertTrue(shouldUseCompactWindowLayout(420f))
-        assertTrue(shouldUseCompactWindowLayout(779.9f))
+    fun halfScreenHeightUsesDenseLayout() {
+        assertEquals(ConverterWindowMode.HalfScreen, converterWindowMode(360f))
+        assertEquals(ConverterWindowMode.HalfScreen, converterWindowMode(519.9f))
     }
 
     @Test
-    fun regularPhoneHeightKeepsOriginalLayout() {
-        assertFalse(shouldUseCompactWindowLayout(780f))
-        assertFalse(shouldUseCompactWindowLayout(840f))
+    fun mediumHeightUsesCompactLayout() {
+        assertEquals(ConverterWindowMode.Compact, converterWindowMode(520f))
+        assertEquals(ConverterWindowMode.Compact, converterWindowMode(779.9f))
+    }
+
+    @Test
+    fun regularPhoneHeightKeepsFullLayout() {
+        assertEquals(ConverterWindowMode.Regular, converterWindowMode(780f))
+        assertEquals(ConverterWindowMode.Regular, converterWindowMode(840f))
     }
 }

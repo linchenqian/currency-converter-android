@@ -23,10 +23,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Check
@@ -61,6 +59,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -78,10 +77,20 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private const val HalfScreenHeightThresholdDp = 520f
 private const val CompactWindowHeightThresholdDp = 780f
 
-internal fun shouldUseCompactWindowLayout(heightDp: Float): Boolean =
-    heightDp < CompactWindowHeightThresholdDp
+internal enum class ConverterWindowMode {
+    Regular,
+    Compact,
+    HalfScreen,
+}
+
+internal fun converterWindowMode(heightDp: Float): ConverterWindowMode = when {
+    heightDp < HalfScreenHeightThresholdDp -> ConverterWindowMode.HalfScreen
+    heightDp < CompactWindowHeightThresholdDp -> ConverterWindowMode.Compact
+    else -> ConverterWindowMode.Regular
+}
 
 @Composable
 fun ConverterRoute(
@@ -136,69 +145,46 @@ private fun ConverterScreen(
             .fillMaxSize()
             .background(colors.appBackground),
     ) {
-        val compactWindow = shouldUseCompactWindowLayout(maxHeight.value)
+        val windowMode = converterWindowMode(maxHeight.value)
+        val conversionHeight = when (windowMode) {
+            ConverterWindowMode.HalfScreen -> (maxHeight * 0.38f).coerceIn(122.dp, 168.dp)
+            ConverterWindowMode.Compact -> (maxHeight * 0.43f).coerceIn(220.dp, 340.dp)
+            ConverterWindowMode.Regular -> (maxHeight * 0.47f).coerceIn(390.dp, 438.dp)
+        }
+        val calculatorPadding = when (windowMode) {
+            ConverterWindowMode.HalfScreen -> 5.dp
+            ConverterWindowMode.Compact -> 9.dp
+            ConverterWindowMode.Regular -> 14.dp
+        }
 
-        if (compactWindow) {
-            val scrollState = rememberScrollState()
-            val conversionHeight = (maxHeight * 0.62f).coerceIn(270.dp, 340.dp)
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding(),
+        ) {
+            ConversionPanel(
+                state = state,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding()
-                    .verticalScroll(scrollState),
-            ) {
-                ConversionPanel(
-                    state = state,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(conversionHeight),
-                    compact = true,
-                    onOpenCurrencyPicker = onOpenCurrencyPicker,
-                    onSwapCurrencies = onSwapCurrencies,
-                )
-                CalculatorPad(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(390.dp)
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                    onDigit = onDigit,
-                    onDecimal = onDecimal,
-                    onOperator = onOperator,
-                    onBackspace = onBackspace,
-                    onClear = onClear,
-                    onPercent = onPercent,
-                    onEquals = onEquals,
-                )
-            }
-        } else {
-            val conversionHeight = (maxHeight * 0.47f).coerceIn(390.dp, 438.dp)
-            Column(
+                    .fillMaxWidth()
+                    .height(conversionHeight),
+                windowMode = windowMode,
+                onOpenCurrencyPicker = onOpenCurrencyPicker,
+                onSwapCurrencies = onSwapCurrencies,
+            )
+            CalculatorPad(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding(),
-            ) {
-                ConversionPanel(
-                    state = state,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(conversionHeight),
-                    onOpenCurrencyPicker = onOpenCurrencyPicker,
-                    onSwapCurrencies = onSwapCurrencies,
-                )
-                CalculatorPad(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = 14.dp, vertical = 14.dp),
-                    onDigit = onDigit,
-                    onDecimal = onDecimal,
-                    onOperator = onOperator,
-                    onBackspace = onBackspace,
-                    onClear = onClear,
-                    onPercent = onPercent,
-                    onEquals = onEquals,
-                )
-            }
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = calculatorPadding, vertical = calculatorPadding),
+                windowMode = windowMode,
+                onDigit = onDigit,
+                onDecimal = onDecimal,
+                onOperator = onOperator,
+                onBackspace = onBackspace,
+                onClear = onClear,
+                onPercent = onPercent,
+                onEquals = onEquals,
+            )
         }
     }
 }
@@ -209,24 +195,45 @@ private fun ConversionPanel(
     modifier: Modifier,
     onOpenCurrencyPicker: (CurrencySlot) -> Unit,
     onSwapCurrencies: () -> Unit,
-    compact: Boolean = false,
+    windowMode: ConverterWindowMode,
 ) {
     val colors = LocalCurrencyColors.current
+    val compact = windowMode != ConverterWindowMode.Regular
+    val halfScreen = windowMode == ConverterWindowMode.HalfScreen
     Surface(
         modifier = modifier,
         color = colors.displaySurface,
-        shape = RoundedCornerShape(bottomStart = 30.dp, bottomEnd = 30.dp),
-        shadowElevation = 10.dp,
+        shape = RoundedCornerShape(
+            bottomStart = if (halfScreen) 22.dp else 30.dp,
+            bottomEnd = if (halfScreen) 22.dp else 30.dp,
+        ),
+        shadowElevation = if (halfScreen) 6.dp else 10.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(
-                    start = if (compact) 18.dp else 28.dp,
-                    end = if (compact) 18.dp else 28.dp,
-                    top = if (compact) 4.dp else 12.dp,
-                    bottom = if (compact) 8.dp else 16.dp,
+                    start = when (windowMode) {
+                        ConverterWindowMode.HalfScreen -> 12.dp
+                        ConverterWindowMode.Compact -> 18.dp
+                        ConverterWindowMode.Regular -> 28.dp
+                    },
+                    end = when (windowMode) {
+                        ConverterWindowMode.HalfScreen -> 12.dp
+                        ConverterWindowMode.Compact -> 18.dp
+                        ConverterWindowMode.Regular -> 28.dp
+                    },
+                    top = when (windowMode) {
+                        ConverterWindowMode.HalfScreen -> 1.dp
+                        ConverterWindowMode.Compact -> 4.dp
+                        ConverterWindowMode.Regular -> 12.dp
+                    },
+                    bottom = when (windowMode) {
+                        ConverterWindowMode.HalfScreen -> 3.dp
+                        ConverterWindowMode.Compact -> 8.dp
+                        ConverterWindowMode.Regular -> 16.dp
+                    },
                 ),
         ) {
             ConversionBand(
@@ -236,12 +243,16 @@ private fun ConversionPanel(
                 currency = state.fromCurrency,
                 expression = ExpressionEvaluator.formatExpression(state.expression),
                 amount = state.sourceValue,
-                amountMaxSize = if (compact) 40 else 54,
-                amountMinSize = if (compact) 15 else 18,
-                compact = compact,
+                amountMaxSize = when (windowMode) {
+                    ConverterWindowMode.HalfScreen -> 31
+                    ConverterWindowMode.Compact -> 40
+                    ConverterWindowMode.Regular -> 54
+                },
+                amountMinSize = if (halfScreen) 13 else if (compact) 15 else 18,
+                windowMode = windowMode,
                 onCurrencyClick = { onOpenCurrencyPicker(CurrencySlot.From) },
             )
-            SwapDivider(onSwapCurrencies, compact)
+            SwapDivider(onSwapCurrencies, windowMode)
             ConversionBand(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -249,22 +260,28 @@ private fun ConversionPanel(
                 currency = state.toCurrency,
                 expression = "约合",
                 amount = state.convertedValue,
-                amountMaxSize = if (compact) 38 else 48,
-                amountMinSize = if (compact) 14 else 17,
-                compact = compact,
+                amountMaxSize = when (windowMode) {
+                    ConverterWindowMode.HalfScreen -> 30
+                    ConverterWindowMode.Compact -> 38
+                    ConverterWindowMode.Regular -> 48
+                },
+                amountMinSize = if (halfScreen) 12 else if (compact) 14 else 17,
+                windowMode = windowMode,
                 converted = true,
                 onCurrencyClick = { onOpenCurrencyPicker(CurrencySlot.To) },
             )
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                text = buildRateText(state),
-                color = colors.secondaryText,
-                fontSize = if (compact) 11.sp else 13.sp,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.End,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (!halfScreen) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = buildRateText(state),
+                    color = colors.secondaryText,
+                    fontSize = if (compact) 11.sp else 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -279,50 +296,54 @@ private fun ConversionBand(
     onCurrencyClick: () -> Unit,
     modifier: Modifier = Modifier,
     converted: Boolean = false,
-    compact: Boolean = false,
+    windowMode: ConverterWindowMode,
 ) {
     val colors = LocalCurrencyColors.current
+    val compact = windowMode != ConverterWindowMode.Regular
+    val halfScreen = windowMode == ConverterWindowMode.HalfScreen
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CurrencySelector(
             currency = currency,
-            compact = compact,
+            windowMode = windowMode,
             onClick = onCurrencyClick,
         )
-        Spacer(Modifier.width(if (compact) 6.dp else 10.dp))
+        Spacer(Modifier.width(if (halfScreen) 4.dp else if (compact) 6.dp else 10.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(top = if (converted) 6.dp else 2.dp),
+                .padding(top = if (halfScreen) 0.dp else if (converted) 6.dp else 2.dp),
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                text = expression,
-                color = colors.primaryText,
-                fontSize = when {
-                    compact && converted -> 14.sp
-                    compact -> 13.sp
-                    converted -> 18.sp
-                    else -> 16.sp
-                },
-                fontWeight = if (converted) FontWeight.SemiBold else FontWeight.Medium,
-                textAlign = TextAlign.End,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(
-                Modifier.height(
-                    when {
-                        compact -> 5.dp
-                        converted -> 14.dp
-                        else -> 16.dp
+            if (!halfScreen) {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = expression,
+                    color = colors.primaryText,
+                    fontSize = when {
+                        compact && converted -> 14.sp
+                        compact -> 13.sp
+                        converted -> 18.sp
+                        else -> 16.sp
                     },
-                ),
-            )
+                    fontWeight = if (converted) FontWeight.SemiBold else FontWeight.Medium,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(
+                    Modifier.height(
+                        when {
+                            compact -> 5.dp
+                            converted -> 14.dp
+                            else -> 16.dp
+                        },
+                    ),
+                )
+            }
             AutoSizeAmount(
                 currency = currency,
                 amount = amount,
@@ -337,47 +358,51 @@ private fun ConversionBand(
 private fun CurrencySelector(
     currency: CurrencyInfo,
     onClick: () -> Unit,
-    compact: Boolean = false,
+    windowMode: ConverterWindowMode,
 ) {
     val colors = LocalCurrencyColors.current
+    val compact = windowMode != ConverterWindowMode.Regular
+    val halfScreen = windowMode == ConverterWindowMode.HalfScreen
     Column(
         modifier = Modifier
-            .width(if (compact) 66.dp else 84.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .width(if (halfScreen) 54.dp else if (compact) 66.dp else 84.dp)
+            .clip(RoundedCornerShape(if (halfScreen) 12.dp else 18.dp))
             .clickable(
                 role = Role.Button,
                 onClickLabel = "选择${currency.name}",
                 onClick = onClick,
             )
-            .padding(vertical = if (compact) 1.dp else 5.dp),
+            .padding(vertical = if (halfScreen) 0.dp else if (compact) 1.dp else 5.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         SvgFlag(
             flagCode = currency.flagCode,
-            modifier = Modifier.size(if (compact) 32.dp else 42.dp),
+            modifier = Modifier.size(if (halfScreen) 25.dp else if (compact) 32.dp else 42.dp),
         )
-        Spacer(Modifier.height(if (compact) 3.dp else 7.dp))
-        Text(
-            text = currency.name,
-            color = colors.primaryText,
-            fontSize = if (compact) 15.sp else 18.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-        )
-        Spacer(Modifier.height(if (compact) 0.dp else 2.dp))
+        Spacer(Modifier.height(if (halfScreen) 1.dp else if (compact) 3.dp else 7.dp))
+        if (!halfScreen) {
+            Text(
+                text = currency.name,
+                color = colors.primaryText,
+                fontSize = if (compact) 15.sp else 18.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+            )
+            Spacer(Modifier.height(if (compact) 0.dp else 2.dp))
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = currency.code,
                 color = colors.secondaryText,
-                fontSize = if (compact) 12.sp else 14.sp,
+                fontSize = if (halfScreen) 10.sp else if (compact) 12.sp else 14.sp,
                 fontWeight = FontWeight.Medium,
             )
             Icon(
                 imageVector = Icons.Rounded.KeyboardArrowDown,
                 contentDescription = null,
                 tint = colors.secondaryText,
-                modifier = Modifier.size(if (compact) 16.dp else 19.dp),
+                modifier = Modifier.size(if (halfScreen) 12.dp else if (compact) 16.dp else 19.dp),
             )
         }
     }
@@ -463,30 +488,32 @@ private fun amountAnnotatedText(
 @Composable
 private fun SwapDivider(
     onClick: () -> Unit,
-    compact: Boolean = false,
+    windowMode: ConverterWindowMode,
 ) {
     val colors = LocalCurrencyColors.current
+    val compact = windowMode != ConverterWindowMode.Regular
+    val halfScreen = windowMode == ConverterWindowMode.HalfScreen
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (compact) 34.dp else 44.dp),
+            .height(if (halfScreen) 24.dp else if (compact) 34.dp else 44.dp),
         contentAlignment = Alignment.Center,
     ) {
         HorizontalDivider(color = colors.divider)
         Surface(
             onClick = onClick,
-            modifier = Modifier.size(if (compact) 38.dp else 48.dp),
+            modifier = Modifier.size(if (halfScreen) 28.dp else if (compact) 38.dp else 48.dp),
             shape = CircleShape,
             color = colors.swapSurface,
             contentColor = colors.primaryText,
             border = BorderStroke(1.dp, colors.swapBorder),
-            shadowElevation = 4.dp,
+            shadowElevation = if (halfScreen) 2.dp else 4.dp,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Rounded.Height,
                     contentDescription = "交换原始币种和目标币种",
-                    modifier = Modifier.size(if (compact) 23.dp else 29.dp),
+                    modifier = Modifier.size(if (halfScreen) 18.dp else if (compact) 23.dp else 29.dp),
                 )
             }
         }
@@ -496,6 +523,7 @@ private fun SwapDivider(
 @Composable
 private fun CalculatorPad(
     modifier: Modifier,
+    windowMode: ConverterWindowMode,
     onDigit: (String) -> Unit,
     onDecimal: () -> Unit,
     onOperator: (Char) -> Unit,
@@ -505,9 +533,40 @@ private fun CalculatorPad(
     onEquals: () -> Unit,
 ) {
     val colors = LocalCurrencyColors.current
+    val minimumHeight = if (windowMode == ConverterWindowMode.Regular) 328.dp else 0.dp
+    val surfaceRadius = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 18.dp
+        ConverterWindowMode.Compact -> 24.dp
+        ConverterWindowMode.Regular -> 28.dp
+    }
+    val innerPadding = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 5.dp
+        ConverterWindowMode.Compact -> 10.dp
+        ConverterWindowMode.Regular -> 16.dp
+    }
+    val horizontalSpacing = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 5.dp
+        ConverterWindowMode.Compact -> 8.dp
+        ConverterWindowMode.Regular -> 12.dp
+    }
+    val verticalSpacing = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 4.dp
+        ConverterWindowMode.Compact -> 7.dp
+        ConverterWindowMode.Regular -> 10.dp
+    }
+    val operatorMinWidth = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 52.dp
+        ConverterWindowMode.Compact -> 62.dp
+        ConverterWindowMode.Regular -> 70.dp
+    }
+    val operatorMaxWidth = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 58.dp
+        ConverterWindowMode.Compact -> 70.dp
+        ConverterWindowMode.Regular -> 78.dp
+    }
     Surface(
-        modifier = modifier.heightIn(min = 328.dp),
-        shape = RoundedCornerShape(28.dp),
+        modifier = modifier.heightIn(min = minimumHeight),
+        shape = RoundedCornerShape(surfaceRadius),
         color = colors.consoleSurface,
         border = BorderStroke(1.dp, colors.surfaceBorder),
         shadowElevation = 3.dp,
@@ -515,49 +574,65 @@ private fun CalculatorPad(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(innerPadding),
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
         ) {
             Column(
                 modifier = Modifier.weight(3f),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             ) {
-                CalculatorRow {
-                    CalculatorKey("C", "清除", onClear, Modifier.weight(1f), utility = true)
+                CalculatorRow(horizontalSpacing) {
+                    CalculatorKey(
+                        "C",
+                        "清除",
+                        onClear,
+                        windowMode,
+                        Modifier.weight(1f),
+                        utility = true,
+                    )
                     CalculatorIconKey(
                         icon = Icons.AutoMirrored.Rounded.Backspace,
                         label = "退格",
                         onClick = onBackspace,
+                        windowMode = windowMode,
                         modifier = Modifier.weight(1f),
                     )
-                    CalculatorKey("%", "百分比", onPercent, Modifier.weight(1f), utility = true)
+                    CalculatorKey(
+                        "%",
+                        "百分比",
+                        onPercent,
+                        windowMode,
+                        Modifier.weight(1f),
+                        utility = true,
+                    )
                 }
-                CalculatorRow {
-                    CalculatorKey("7", "7", { onDigit("7") }, Modifier.weight(1f))
-                    CalculatorKey("8", "8", { onDigit("8") }, Modifier.weight(1f))
-                    CalculatorKey("9", "9", { onDigit("9") }, Modifier.weight(1f))
+                CalculatorRow(horizontalSpacing) {
+                    CalculatorKey("7", "7", { onDigit("7") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("8", "8", { onDigit("8") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("9", "9", { onDigit("9") }, windowMode, Modifier.weight(1f))
                 }
-                CalculatorRow {
-                    CalculatorKey("4", "4", { onDigit("4") }, Modifier.weight(1f))
-                    CalculatorKey("5", "5", { onDigit("5") }, Modifier.weight(1f))
-                    CalculatorKey("6", "6", { onDigit("6") }, Modifier.weight(1f))
+                CalculatorRow(horizontalSpacing) {
+                    CalculatorKey("4", "4", { onDigit("4") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("5", "5", { onDigit("5") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("6", "6", { onDigit("6") }, windowMode, Modifier.weight(1f))
                 }
-                CalculatorRow {
-                    CalculatorKey("1", "1", { onDigit("1") }, Modifier.weight(1f))
-                    CalculatorKey("2", "2", { onDigit("2") }, Modifier.weight(1f))
-                    CalculatorKey("3", "3", { onDigit("3") }, Modifier.weight(1f))
+                CalculatorRow(horizontalSpacing) {
+                    CalculatorKey("1", "1", { onDigit("1") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("2", "2", { onDigit("2") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("3", "3", { onDigit("3") }, windowMode, Modifier.weight(1f))
                 }
-                CalculatorRow {
-                    CalculatorKey("00", "00", { onDigit("00") }, Modifier.weight(1f))
-                    CalculatorKey("0", "0", { onDigit("0") }, Modifier.weight(1f))
-                    CalculatorKey(".", "小数点", onDecimal, Modifier.weight(1f))
+                CalculatorRow(horizontalSpacing) {
+                    CalculatorKey("00", "00", { onDigit("00") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey("0", "0", { onDigit("0") }, windowMode, Modifier.weight(1f))
+                    CalculatorKey(".", "小数点", onDecimal, windowMode, Modifier.weight(1f))
                 }
             }
 
             OperatorRail(
                 modifier = Modifier
-                    .widthIn(min = 70.dp, max = 78.dp)
+                    .widthIn(min = operatorMinWidth, max = operatorMaxWidth)
                     .fillMaxHeight(),
+                windowMode = windowMode,
                 onOperator = onOperator,
                 onEquals = onEquals,
             )
@@ -567,13 +642,14 @@ private fun CalculatorPad(
 
 @Composable
 private fun ColumnScope.CalculatorRow(
+    horizontalSpacing: Dp,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .weight(1f),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
         content = content,
     )
 }
@@ -583,21 +659,32 @@ private fun CalculatorKey(
     text: String,
     label: String,
     onClick: () -> Unit,
+    windowMode: ConverterWindowMode,
     modifier: Modifier = Modifier,
     utility: Boolean = false,
 ) {
     val colors = LocalCurrencyColors.current
+    val keyRadius = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 12.dp
+        ConverterWindowMode.Compact -> 18.dp
+        ConverterWindowMode.Regular -> 22.dp
+    }
+    val fontSize = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> if (utility) 18.sp else 20.sp
+        ConverterWindowMode.Compact -> if (utility) 23.sp else 25.sp
+        ConverterWindowMode.Regular -> if (utility) 25.sp else 27.sp
+    }
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxHeight(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(keyRadius),
         color = if (utility) colors.keySurfaceStrong else colors.keySurface,
         contentColor = colors.primaryText,
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = text,
-                fontSize = if (utility) 25.sp else 27.sp,
+                fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -609,13 +696,24 @@ private fun CalculatorIconKey(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
+    windowMode: ConverterWindowMode,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalCurrencyColors.current
+    val keyRadius = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 12.dp
+        ConverterWindowMode.Compact -> 18.dp
+        ConverterWindowMode.Regular -> 22.dp
+    }
+    val iconSize = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 20.dp
+        ConverterWindowMode.Compact -> 24.dp
+        ConverterWindowMode.Regular -> 27.dp
+    }
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxHeight(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(keyRadius),
         color = colors.keySurfaceStrong,
         contentColor = colors.primaryText,
     ) {
@@ -623,7 +721,7 @@ private fun CalculatorIconKey(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                modifier = Modifier.size(27.dp),
+                modifier = Modifier.size(iconSize),
             )
         }
     }
@@ -632,20 +730,36 @@ private fun CalculatorIconKey(
 @Composable
 private fun OperatorRail(
     modifier: Modifier,
+    windowMode: ConverterWindowMode,
     onOperator: (Char) -> Unit,
     onEquals: () -> Unit,
 ) {
     val colors = LocalCurrencyColors.current
+    val railRadius = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 15.dp
+        ConverterWindowMode.Compact -> 20.dp
+        ConverterWindowMode.Regular -> 24.dp
+    }
+    val equalsSize = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 34.dp
+        ConverterWindowMode.Compact -> 48.dp
+        ConverterWindowMode.Regular -> 58.dp
+    }
+    val equalsFontSize = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 23.sp
+        ConverterWindowMode.Compact -> 27.sp
+        ConverterWindowMode.Regular -> 31.sp
+    }
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(railRadius),
         color = colors.operatorSurface,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            OperatorKey("÷", "除", { onOperator('÷') }, showDivider = true)
-            OperatorKey("×", "乘", { onOperator('×') }, showDivider = true)
-            OperatorKey("−", "减", { onOperator('-') }, showDivider = true)
-            OperatorKey("+", "加", { onOperator('+') }, showDivider = true)
+            OperatorKey("÷", "除", { onOperator('÷') }, windowMode, showDivider = true)
+            OperatorKey("×", "乘", { onOperator('×') }, windowMode, showDivider = true)
+            OperatorKey("−", "减", { onOperator('-') }, windowMode, showDivider = true)
+            OperatorKey("+", "加", { onOperator('+') }, windowMode, showDivider = true)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -654,7 +768,7 @@ private fun OperatorRail(
             ) {
                 Surface(
                     onClick = onEquals,
-                    modifier = Modifier.size(58.dp),
+                    modifier = Modifier.size(equalsSize),
                     shape = CircleShape,
                     color = colors.accent,
                     contentColor = Color.White,
@@ -663,7 +777,7 @@ private fun OperatorRail(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = "=",
-                            fontSize = 31.sp,
+                            fontSize = equalsFontSize,
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -678,9 +792,20 @@ private fun androidx.compose.foundation.layout.ColumnScope.OperatorKey(
     text: String,
     label: String,
     onClick: () -> Unit,
+    windowMode: ConverterWindowMode,
     showDivider: Boolean,
 ) {
     val colors = LocalCurrencyColors.current
+    val operatorFontSize = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 22.sp
+        ConverterWindowMode.Compact -> 26.sp
+        ConverterWindowMode.Regular -> 29.sp
+    }
+    val dividerPadding = when (windowMode) {
+        ConverterWindowMode.HalfScreen -> 8.dp
+        ConverterWindowMode.Compact -> 10.dp
+        ConverterWindowMode.Regular -> 14.dp
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -699,7 +824,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.OperatorKey(
             Text(
                 text = text,
                 color = colors.accent,
-                fontSize = 29.sp,
+                fontSize = operatorFontSize,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -707,7 +832,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.OperatorKey(
             HorizontalDivider(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = dividerPadding),
                 color = colors.operatorDivider,
             )
         }
