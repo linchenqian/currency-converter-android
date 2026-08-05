@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.jojo.currencyconverter.ui.AppUpdateHost
 import com.jojo.currencyconverter.ui.ConverterRoute
 import com.jojo.currencyconverter.ui.theme.CurrencyConverterTheme
 import com.jojo.currencyconverter.ui.theme.LocalCurrencyColors
@@ -25,7 +26,9 @@ class MainActivity : ComponentActivity() {
                         .background(colors.appBackground),
                     color = colors.appBackground,
                 ) {
-                    ConverterRoute()
+                    AppUpdateHost {
+                        ConverterRoute()
+                    }
                 }
             }
         }

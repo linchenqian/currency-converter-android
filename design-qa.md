@@ -38,7 +38,7 @@ final result: blocked
 - Preserved the `512 × 512px` canvas, textured navy background, colors, line work, and center alignment
 - Regenerated legacy square and round launcher resources for mdpi through xxxhdpi from the updated master
 - Updated the README icon preview and adaptive-icon foreground from the same master
-- Android Lint and all 14 JVM unit tests pass
+- Android Lint and all 19 JVM unit tests pass
 - Debug APK assembly succeeds as version `1.0.4` (`versionCode 5`)
 
 launcher icon result: passed
@@ -59,7 +59,7 @@ equals interaction result: passed
 - Verified the reported `1475 × 668.55` case becomes `1475 × 6.6855` after pressing percent
 - Verified small percentages such as `0.1%` remain `0.001` instead of being rounded away
 - Added regression coverage for both percentage scenarios
-- Android Lint, all 14 JVM unit tests, and the version `1.0.5` debug APK build pass
+- Android Lint, all 19 JVM unit tests, and the version `1.0.5` debug APK build pass
 
 percent precision result: passed
 
@@ -69,6 +69,19 @@ percent precision result: passed
 - Updated the Gradle root project name and README title/description to match
 - Kept the application ID `com.jojo.currencyconverter` unchanged for update compatibility
 - Verified the built version `1.0.5` APK reports `application-label:'Currency'`
-- Android Lint, all 14 JVM unit tests, and APK assembly pass
+- Android Lint, all 19 JVM unit tests, and APK assembly pass
 
 app name result: passed
+
+## Automatic update follow-up — 2026-08-05
+
+- Added a silent startup check against the repository's latest public GitHub Release
+- Added semantic version comparison, GitHub redirect fallback validation, and five JVM regression tests
+- Added update choices for immediate update, remind next launch, and ignore the current release
+- Immediate update uses Android DownloadManager with visible progress and background notification support
+- Downloaded APKs are checked against the GitHub SHA-256 digest and the current application ID before installation
+- Added FileProvider sharing and Android's per-app unknown-source permission flow before opening the system installer
+- Verified the public GitHub API rate-limit failure falls back to the accessible `releases/latest` redirect
+- Runtime download and installer handoff still require verification on a connected Android device
+
+automatic update result: blocked
